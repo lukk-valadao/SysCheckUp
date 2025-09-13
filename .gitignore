@@ -1,0 +1,7 @@
+# Logs
+Logs/
+*.log
+
+# Cache temporário
+*.swp
+__pycache__/
