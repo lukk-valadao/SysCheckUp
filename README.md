@@ -1,29 +1,35 @@
-SysCheckUp v1.3
+# SysCheckUp v1.4
 
-Ferramenta: SysCheck-Up
-Versão: 1.3
-Descrição: Painel interativo de verificação, limpeza e segurança para sistemas Debian-based.
-Autores: Shadows & Aeris Satana
+**Ferramenta:** SysCheck-Up
+**Versão:** 1.4
+**Descrição:** Painel interativo de verificação, limpeza e segurança para sistemas Debian-based.
+**Autores:** Shadows & Aeris Satana
 
-Descrição do Projeto
+---
 
-O SysCheckUp é um script em Bash que oferece uma interface interativa para realizar verificações de sistema, limpeza, análise de segurança e auditoria básica em sistemas Debian e derivados.
+## Descrição do Projeto
+
+O **SysCheckUp** é um script em Bash que oferece uma interface interativa para realizar verificações de sistema, limpeza, análise de segurança e auditoria básica em sistemas Debian e derivados.
 
 Ele inclui funções como atualização de pacotes, limpeza de cache, verificação de firewall, scan de vírus, checagem de integridade de pacotes, e mais.
 
-O script pode ser executado de forma interativa (SysCheckUp.sh), permitindo que o usuário escolha quais verificações deseja realizar, ou de forma automática (SysCheckUp_automatic.sh), via agendamento com systemd timer.
+O script pode ser executado de forma **interativa** (`SysCheckUp.sh`), permitindo que o usuário escolha quais verificações deseja realizar, ou de forma **automática** (`SysCheckUp_automatic.sh`), via agendamento com **systemd timer**.
 
-Estrutura do Projeto
+---
+
+## Estrutura do Projeto
+
+```text
 SysCheckUp/
 │
-├─ SysCheckUp.sh            # Script principal (modo interativo)
-├─ SysCheckUp_automatic.sh  # Script com agendamento automático
-├─ Logs/                    # Diretório para logs gerados pelo script
-├─ README.md                # Este arquivo de documentação
-└─ modules/                 # Futuramente, funções/módulos separados
-
+├─ SysCheckUp.sh              # Script principal (modo interativo)
+├─ SysCheckUp_automatic.sh    # Script com agendamento automático
+├─ syscheckup.service         # Unidade systemd para execução automática
+├─ syscheckup.timer           # Timer systemd para agendamento
+├─ Logs/                      # Diretório para logs gerados pelo script
+├─ README.md                  # Este arquivo de documentação
+└─ modules/                   # Futuramente, funções/módulos separados
 Funcionalidades Principais
-
 Atualização do sistema (apt update && apt upgrade)
 
 Limpeza de pacotes e cache (autoremove, autoclean, thumbnails, lixeira)
@@ -49,57 +55,53 @@ Checagem de integridade de pacotes (debsums)
 📌 O script também gera logs detalhados de todas as operações na pasta Logs/, com timestamp automático.
 
 Execução Manual
-
 Clone o repositório:
 
+bash
+Copiar código
 git clone https://github.com/lukk-valadao/SysCheckUp.git
 cd SysCheckUp
-
-
 Torne o script executável:
 
+bash
+Copiar código
 chmod +x SysCheckUp.sh
-
-
 Execute o script (modo interativo):
 
+bash
+Copiar código
 ./SysCheckUp.sh
-
 Execução Automática (SysCheckUp_automatic.sh)
-
 O script SysCheckUp_automatic.sh foi projetado para rodar sem interação, ideal para agendamento recorrente.
-
 Ele é integrado ao systemd timer, permitindo que o sistema rode o check-up de forma periódica (ex.: semanal).
 
 Instalação do serviço e timer
-
 Copie os arquivos de serviço e timer para o systemd:
 
+bash
+Copiar código
 sudo cp syscheckup.service /etc/systemd/system/
 sudo cp syscheckup.timer /etc/systemd/system/
-
-
 Recarregue o systemd e ative o timer:
 
+bash
+Copiar código
 sudo systemctl daemon-reload
 sudo systemctl enable --now syscheckup.timer
-
 Verificação do status
-
 Checar se o timer está ativo:
 
+bash
+Copiar código
 systemctl list-timers | grep syscheckup
-
-
 Forçar uma execução manual:
 
+bash
+Copiar código
 sudo systemctl start syscheckup.service
-
-
-Todos os resultados ficam salvos em SysCheckUp/Logs/ com data e hora.
+📌 Todos os resultados ficam salvos em SysCheckUp/Logs/ com data e hora.
 
 Observações
-
 Os logs são salvos automaticamente na pasta Logs/ com timestamp.
 
 Algumas funções exigem privilégios de superusuário (sudo).
@@ -107,16 +109,15 @@ Algumas funções exigem privilégios de superusuário (sudo).
 A primeira execução pode instalar pacotes necessários como clamav, deborphan, debsums e ufw.
 
 .gitignore recomendado
+gitignore
+Copiar código
 Logs/*
 *.log
 *.tmp
 *.swp
-
-
 Isso evita versionar logs ou arquivos temporários do script.
 
 Licença
-
 Projeto privado, sem licença pública no momento.
 
 Desenvolvedores: Shadows & Aeris Satana
