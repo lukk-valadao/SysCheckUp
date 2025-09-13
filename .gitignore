@@ -2,6 +2,9 @@
 Logs/
 *.log
 
-# Cache temporário
+# Arquivos temporários
 *.swp
+*.tmp
+*.bak
 __pycache__/
+*.pyc
