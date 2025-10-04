@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Ferramenta: SysCheck-Up v1.3
+# Ferramenta: SysCheck-Up v1.4.1
 # Descrição: Painel interativo de verificação, limpeza e segurança para sistemas Debian-based
-# Autor: Shadows e Aeris Satana
+# Autor: Lukk Shadows e Aeris Satana
 
 # === CORES PARA TERMINAL ===
 RED='\033[0;31m'
@@ -25,23 +25,118 @@ pause() {
   read -rp "Pressione Enter para continuar..."
 }
 
+# === FUNÇÕES DE INTERFACE ===
+
+spinner() {
+  local pid=$1
+  local delay=0.1
+  local spinstr='|/-\'
+  while ps -p $pid > /dev/null 2>&1; do
+    local temp=${spinstr#?}
+    printf " [%c]  " "$spinstr"
+    local spinstr=$temp${spinstr%"$temp"}
+    sleep $delay
+    printf "\b\b\b\b\b\b"
+  done
+}
+
+progress_bar_step() {
+  local progress=$1
+  local total=$2
+  local percent=$((progress * 100 / total))
+  local filled=$((percent / 2))
+  local empty=$((50 - filled))
+  printf "\r[%-${filled}s%${empty}s] %d%%" "#" "" "$percent"
+}
+
+progress_bar_global() {
+  local progress=$1
+  local total=$2
+  local percent=$((progress * 100 / total))
+  local filled=$((percent / 2))
+  local empty=$((50 - filled))
+  printf "\rProgresso total: [%-${filled}s%${empty}s] %d%%" "#" "" "$percent"
+}
+
 # === FUNÇÕES DE CADA MÓDULO ===
 
 atualizacoes() {
-  log "${YELLOW}[1/12] Verificando atualizações do sistema...${NC}"
-  sudo apt update && sudo apt upgrade -y | tee -a "$log_file"
+    log "${YELLOW}[1/12] Verificando atualizações do sistema...${NC}"
+
+    # Atualiza lista de pacotes e salva log temporário
+    sudo apt update 2>&1 | tee /tmp/apt_update.log | tee -a "$log_file"
+
+    # Verifica erros comuns de repositórios inválidos
+    if grep -q "does not have a Release file" /tmp/apt_update.log || grep -q "404  Not Found" /tmp/apt_update.log; then
+        echo -e "\n⚠️  Um ou mais repositórios falharam durante a atualização."
+        echo "Deseja desabilitar automaticamente os repositórios inválidos?"
+        echo "1) Sim"
+        echo "2) Não"
+        read -rp "Escolha [1-2]: " opt
+
+        if [[ "$opt" == "1" ]]; then
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*.list; do
+                if [[ -f "$f" ]] && grep -q "greenbone" "$f"; then
+                    sudo sed -i 's/^/#DESABILITADO # /' "$f"
+                    echo "👉 Repositório $f desabilitado."
+                fi
+            done
+            echo "🔄 Reexecutando atualização com repositórios válidos..."
+            sudo apt update | tee -a "$log_file"
+        else
+            echo "👉 Repositórios inválidos foram ignorados."
+        fi
+    fi
+
+    # Conta pacotes disponíveis
+    UPDATES=$(apt list --upgradable 2>/dev/null | grep -c upgradable)
+
+    if [ "$UPDATES" -gt 0 ]; then
+        echo -e "${GREEN}[$UPDATES pacotes disponíveis para atualização]${NC}"
+        read -rp "Deseja instalar as atualizações agora? (s/n) " choice
+
+        if [[ "$choice" =~ ^[Ss]$ ]]; then
+            # Pergunta se quer upgrade normal ou full-upgrade
+            echo "1) Upgrade normal (seguro)"
+            echo "2) Full-upgrade (atualiza tudo, incluindo substituições de pacotes)"
+            read -rp "Escolha o tipo de atualização [1-2]: " upg_choice
+
+            if [[ "$upg_choice" == "1" ]]; then
+                log "Iniciando upgrade normal..."
+                sudo apt upgrade | tee -a "$log_file"
+            else
+                log "Iniciando full-upgrade..."
+                sudo apt full-upgrade | tee -a "$log_file"
+            fi
+            echo -e "${GREEN}✅ Atualizações concluídas.${NC}"
+        else
+            log "Atualização não instalada."
+        fi
+    else
+        echo -e "${GREEN}✅ Sistema já está atualizado.${NC}"
+    fi
+    echo
+    read -rp "Pressione Enter para continuar..."
 }
+
+
+
+
 
 limpeza() {
   log "${YELLOW}[2/12] Limpando pacotes e cache...${NC}"
+  etapas=4
+  etapa=0
+
   sudo apt autoremove -y | tee -a "$log_file"
+  etapa=$((etapa+1)); progress_bar_step $etapa $etapas
+
   sudo apt autoclean -y | tee -a "$log_file"
+  etapa=$((etapa+1)); progress_bar_step $etapa $etapas
+
   sudo journalctl --vacuum-time=5d | tee -a "$log_file"
+  etapa=$((etapa+1)); progress_bar_step $etapa $etapas
 
-  # Limpeza de miniaturas
-  rm -rf ~/.cache/thumbnails/* ~/.thumbnails/* 2>/dev/null
-
-  # Confirmação antes de limpar a lixeira
   read -rp "Deseja esvaziar a lixeira? (s/n) " limpar_lixeira
   if [[ "$limpar_lixeira" =~ ^[Ss]$ ]]; then
     rm -rf ~/.local/share/Trash/* 2>/dev/null
@@ -49,6 +144,9 @@ limpeza() {
   else
     log "Lixeira não foi esvaziada."
   fi
+  etapa=$((etapa+1)); progress_bar_step $etapa $etapas
+
+  echo -e "\nLimpeza concluída!"
 }
 
 firewall() {
@@ -74,7 +172,10 @@ clamav_scan() {
   read -rp "Deseja executar o scan completo de vírus em /home? (s/n) " choice
   if [[ "$choice" =~ ^[Ss]$ ]]; then
     log "Executando varredura básica de vírus em /home (Metasploit será excluído)..."
-    sudo clamscan -r /home --exclude-dir=/home/*/metasploit-framework --bell -i | tee -a "$log_file"
+    (sudo clamscan -r /home --exclude-dir=/home/*/metasploit-framework --bell -i | tee -a "$log_file") &
+    spinner $!
+    wait
+    echo
   else
     log "Scan de vírus pulado."
   fi
@@ -139,20 +240,27 @@ sair() {
 
 # === FUNÇÃO PARA EXECUTAR TODOS COM PERGUNTA S/N ===
 executar_tudo() {
-  for func in atualizacoes limpeza firewall clamav_scan pacotes_orfaos backup_check usuarios_sudo servicos_ativos espaco_disco conexoes_rede integridade_sistema; do
+  funcs=(atualizacoes limpeza firewall clamav_scan pacotes_orfaos backup_check usuarios_sudo servicos_ativos espaco_disco conexoes_rede integridade_sistema)
+  total=${#funcs[@]}
+  count=0
+
+  for func in "${funcs[@]}"; do
     read -rp "Deseja executar $func? (s/n) " choice
     if [[ "$choice" =~ ^[Ss]$ ]]; then
       $func
     else
       log "$func pulado."
     fi
+    ((count++))
+    progress_bar_global $count $total
   done
+  echo -e "\n${GREEN}✅ Todos os módulos processados.${NC}"
 }
 
 # === MENU INTERATIVO ===
 while true; do
   clear
-  echo -e "${GREEN}=== SysCheck-Up v1.3 ===${NC}"
+  echo -e "${GREEN}=== SysCheck-Up v1.4.1 ===${NC}"
   echo "1) Atualizações do sistema"
   echo "2) Limpeza de pacotes e cache"
   echo "3) Firewall (UFW)"

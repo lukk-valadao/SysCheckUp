@@ -8,7 +8,9 @@ Este arquivo documenta todas as versões do SysCheckUp, suas datas e as alteraç
 | 1.1    | 2025-08-15 | Adição de verificação de firewall, scan básico de vírus ClamAV e pacotes órfãos. |
 | 1.2    | 2025-08-22 | Inclusão de checagem de backups, usuários sudo e espaço em disco. |
 | 1.3    | 2025-09-12 | Painel interativo completo, scan ClamAV opcional, registro de logs na pasta Logs/, menu interativo e opção "Executar tudo" com confirmação s/n. |
-| 1.4    | 2025-09-XX | [Reservado para próximas alterações] |
+| 1.4    | 2025-09-12 | Adicionados SysCheckUp_automatic.sh, service e timer systemd |
+| 1.4.1  | 2025-10-03 | Correção do módulo de atualizações: agora o SysCheckUp detecta repositórios inválidos ou quebrados, oferece opção para desabilitá-los automaticamente e permite a instalação interativa de pacotes disponíveis. Logs detalhados são mantidos para referência. |
+
 
 ## Observações
 - Todas as alterações importantes devem ser registradas neste arquivo antes de atualizar a versão do script.

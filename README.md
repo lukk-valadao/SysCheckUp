@@ -120,4 +120,4 @@ Isso evita versionar logs ou arquivos temporários do script.
 Licença
 Projeto privado, sem licença pública no momento.
 
-Desenvolvedores: Shadows & Aeris Satana
+Desenvolvedores: Lukk Shadows & Aeris Satana
