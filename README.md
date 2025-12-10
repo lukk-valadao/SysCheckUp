@@ -1,25 +1,30 @@
-# SysCheckUp v1.4.1
+![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)
 
-**Ferramenta:** SysCheck-Up
-**Versão:** 1.4.1
+
+# 🛡️ SysCheckUp v1.4.1
+
+**Ferramenta:** SysCheck-Up | **Versão:** 1.4.1
 **Descrição:** Painel interativo de verificação, limpeza e segurança para sistemas Debian-based.
-**Autor:** Luciano S Valadão
+**Autor:** Luciano Valadão
 
 ---
 
-## Descrição do Projeto
+## 📄 Descrição do Projeto
 
-O **SysCheckUp** é um script em Bash que oferece uma interface interativa para realizar verificações de sistema, limpeza, análise de segurança e auditoria básica em sistemas Debian e derivados.
+O **SysCheckUp** é um script robusto escrito em **Bash** que fornece uma interface interativa completa para administradores e usuários de sistemas **Debian e derivados (Ubuntu, Mint)**. Ele automatiza verificações essenciais de sistema, limpeza de disco, análise de segurança e auditoria básica.
 
-Ele inclui funções como atualização de pacotes, limpeza de cache, verificação de firewall, scan de vírus, checagem de integridade de pacotes, e mais.
+O toolkit oferece dois modos de operação:
 
-O script pode ser executado de forma **interativa** (`SysCheckUp.sh`), permitindo que o usuário escolha quais verificações deseja realizar, ou de forma **automática** (`SysCheckUp_automatic.sh`), via agendamento com **systemd timer**.
+1.  **Interativo (`SysCheckUp.sh`):** Permite ao usuário escolher quais verificações deseja executar através de um menu.
+2.  **Automático (`SysCheckUp_automatic.sh`):** Projetado para ser executado sem interação, ideal para agendamento recorrente via `systemd timer`.
 
 ---
 
-## Estrutura do Projeto
+## 📂 Estrutura do Projeto
 
-```text
+O projeto é organizado com foco na manutenção e na integração com o `systemd`:
+```
 SysCheckUp/
 │
 ├─ SysCheckUp.sh              # Script principal (modo interativo)
@@ -31,9 +36,12 @@ SysCheckUp/
 ├─ Logs/                      # Diretório para logs gerados pelo script
 └─ modules/                   # Funções/módulos separados
    └─ sc.py                   # Script SysCheckUp.sh adaptado para python
+```
+---
 
-Funcionalidades Principais
+## 🔎 Funcionalidades Principais
 
+```
 Atualização do sistema (apt update && apt upgrade)
 
 Limpeza de pacotes e cache (autoremove, autoclean, thumbnails, lixeira)
@@ -55,67 +63,77 @@ Monitoramento de espaço em disco (df -h)
 Listagem de conexões de rede ativas (ss -tulnp)
 
 Checagem de integridade de pacotes (debsums)
+```
 
-📌 O script também gera logs detalhados de todas as operações na pasta Logs/, com timestamp automático.
+> **📌 Nota:** Todas as operações geram logs detalhados na pasta `Logs/` com *timestamp* automático.
 
-Execução Manual
+---
 
-Clone o repositório:
-Copiar código
-git clone https://github.com/lukk-valadao/SysCheckUp.git
+## ⚙️ Execução Manual (Modo Interativo)
+
+Para utilizar o menu interativo, siga os passos abaixo:
+
+### 1. Clonar e Acessar
+
+bash
+```
+git clone [https://github.com/lukk-valadao/SysCheckUp.git](https://github.com/lukk-valadao/SysCheckUp.git)
 cd SysCheckUp
-
-Torne o script executável:
-Copiar código
+```
+2. Tornar Executável
+Conceda permissão de execução ao script principal:
+Bash
+```
 chmod +x SysCheckUp.sh
-
-Execute o script (modo interativo):
-Copiar código
+```
+3. Executar
+Execute o script para iniciar o painel interativo:
+Bash
+```
 ./SysCheckUp.sh
+```
 
-Execução Automática (SysCheckUp_automatic.sh)
-O script SysCheckUp_automatic.sh foi projetado para rodar sem interação, ideal para agendamento recorrente.
-Ele é integrado ao systemd timer, permitindo que o sistema rode o check-up de forma periódica (ex.: semanal).
-
-Instalação do serviço e timer
-Copie os arquivos de serviço e timer para o systemd:
-
-Copiar código
+⏱️ Execução Automática (systemd Timer)
+O script SysCheckUp_automatic.sh é ideal para tarefas recorrentes. Ele pode ser agendado usando o systemd timer.
+1. Instalação do Serviço e Timer
+Copie os arquivos de serviço e timer para o diretório do systemd:
+Bash
+```
 sudo cp syscheckup.service /etc/systemd/system/
 sudo cp syscheckup.timer /etc/systemd/system/
-Recarregue o systemd e ative o timer:
-
-Copiar código
+```
+2. Ativação do Agendamento
+Recarregue o daemon do systemd e ative o timer. Isso fará com que o check-up seja executado periodicamente (conforme configurado no .timer):
+Bash
+```
 sudo systemctl daemon-reload
 sudo systemctl enable --now syscheckup.timer
-Verificação do status
-Checar se o timer está ativo:
-
-Copiar código
+```
+3. Verificação do Status
+Para checar se o timer está ativo e qual é o próximo agendamento:
+Bash
+```
 systemctl list-timers | grep syscheckup
-Forçar uma execução manual:
-
-Copiar código
+```
+Para forçar uma execução manual imediata do serviço:
+Bash
+```
 sudo systemctl start syscheckup.service
-📌 Todos os resultados ficam salvos em SysCheckUp/Logs/ com data e hora.
+```
+📌 Observação: Os resultados das execuções automáticas e manuais são salvos em SysCheckUp/Logs/ com data e hora.
 
-Observações
-Os logs são salvos automaticamente na pasta Logs/ com timestamp.
-
-Algumas funções exigem privilégios de superusuário (sudo).
-
-A primeira execução pode instalar pacotes necessários como clamav, deborphan, debsums e ufw.
-
-.gitignore recomendado
-gitignore
-
+⚠️ Observações e Dependências
+Privilégios: Algumas funções críticas (como atualização e configuração de firewall) exigem privilégios de superusuário (sudo).
+Dependências: A primeira execução do script pode instalar pacotes necessários como clamav, deborphan, debsums e ufw.
+.gitignore Recomendado
+Use o seguinte conteúdo no seu arquivo .gitignore para evitar o versionamento de dados temporários e logs:
+Snippet de código
 Logs/*
 *.log
 *.tmp
 *.swp
-Isso evita versionar logs ou arquivos temporários do script.
 
-Licença
-Projeto privado, sem licença pública no momento.
 
-Desenvolvedor: Luciano Valadão
+📜 Licença
+Projeto privado. Licença pública não definida no momento.
+Autor: Luciano Valadão - lukk.valadao@gmail.com
