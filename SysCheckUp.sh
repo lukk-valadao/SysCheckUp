@@ -2,7 +2,7 @@
 
 # Ferramenta: SysCheck-Up v1.4.1
 # Descrição: Painel interativo de verificação, limpeza e segurança para sistemas Debian-based
-# Autor: Lukk Shadows e Aeris Satana
+# Autor: Luciano Valadão
 
 # === CORES PARA TERMINAL ===
 RED='\033[0;31m'
@@ -58,8 +58,6 @@ progress_bar_global() {
   printf "\rProgresso total: [%-${filled}s%${empty}s] %d%%" "#" "" "$percent"
 }
 
-# === FUNÇÕES DE CADA MÓDULO ===
-
 atualizacoes() {
     log "${YELLOW}[1/12] Verificando atualizações do sistema...${NC}"
 
@@ -93,22 +91,25 @@ atualizacoes() {
 
     if [ "$UPDATES" -gt 0 ]; then
         echo -e "${GREEN}[$UPDATES pacotes disponíveis para atualização]${NC}"
+        echo -e "\n📦 ${YELLOW}Pacotes disponíveis:${NC}"
+        apt list --upgradable 2>/dev/null | grep upgradable | sed 's/\(upgradable.*\)//' | sed 's/^/   • /'
+        echo
+
         read -rp "Deseja instalar as atualizações agora? (s/n) " choice
 
         if [[ "$choice" =~ ^[Ss]$ ]]; then
-            # Pergunta se quer upgrade normal ou full-upgrade
-            echo "1) Upgrade normal (seguro)"
+            echo -e "\n1) Upgrade normal (seguro)"
             echo "2) Full-upgrade (atualiza tudo, incluindo substituições de pacotes)"
             read -rp "Escolha o tipo de atualização [1-2]: " upg_choice
 
             if [[ "$upg_choice" == "1" ]]; then
                 log "Iniciando upgrade normal..."
-                sudo apt upgrade | tee -a "$log_file"
+                sudo apt upgrade -y | tee -a "$log_file"
             else
                 log "Iniciando full-upgrade..."
-                sudo apt full-upgrade | tee -a "$log_file"
+                sudo apt full-upgrade -y | tee -a "$log_file"
             fi
-            echo -e "${GREEN}✅ Atualizações concluídas.${NC}"
+            echo -e "\n${GREEN}✅ Atualizações concluídas.${NC}"
         else
             log "Atualização não instalada."
         fi
@@ -118,7 +119,6 @@ atualizacoes() {
     echo
     read -rp "Pressione Enter para continuar..."
 }
-
 
 
 
@@ -150,17 +150,53 @@ limpeza() {
 }
 
 firewall() {
-  log "${YELLOW}[3/12] Verificando status do firewall (ufw)...${NC}"
+  log "${YELLOW}[3/12] Verificando status do firewall (UFW)...${NC}"
   export PATH=$PATH:/usr/sbin
-  if dpkg -l | grep -q '^ii  ufw '; then
-      sudo ufw status verbose | tee -a "$log_file"
-  else
-      log "${RED}Firewall UFW não encontrado. Instalando...${NC}"
-      sudo apt update
-      sudo apt install ufw -y | tee -a "$log_file"
-      sudo ufw enable | tee -a "$log_file"
+
+  # Verifica se o UFW está instalado
+  if ! dpkg -l | grep -q '^ii  ufw '; then
+    log "${RED}Firewall UFW não encontrado. Instalando...${NC}"
+    sudo apt update -y | tee -a "$log_file"
+    sudo apt install ufw -y | tee -a "$log_file"
+    sudo ufw enable | tee -a "$log_file"
+    log "${GREEN}✅ UFW instalado e ativado.${NC}"
   fi
+
+  # Exibe status atual
+  sudo ufw status verbose | tee -a "$log_file"
+
+  # Lista de portas suspeitas e serviços relacionados
+  declare -A portas=(
+    ["22"]="ssh"
+    ["25"]="exim4"
+    ["631"]="cups"
+  )
+
+  for porta in "${!portas[@]}"; do
+    if sudo ufw status | grep -qE "^$porta.*ALLOW"; then
+      read -rp "[!] Porta $porta (${portas[$porta]}) aberta. Deseja fechá-la? (s/n) " fechar
+      if [[ "$fechar" =~ ^[Ss]$ ]]; then
+        if systemctl is-active --quiet "${portas[$porta]}"; then
+          log "[$porta] Parando serviço ${portas[$porta]}..."
+          sudo systemctl stop "${portas[$porta]}"
+        fi
+        if systemctl is-enabled --quiet "${portas[$porta]}"; then
+          log "[$porta] Desabilitando serviço ${portas[$porta]} no boot..."
+          sudo systemctl disable "${portas[$porta]}"
+        fi
+        sudo ufw deny "$porta"
+        log "[$porta] 🔒 Porta fechada com sucesso."
+      else
+        log "[$porta] 🚪 Porta mantida aberta."
+      fi
+    else
+      log "[$porta] Porta não detectada como aberta."
+    fi
+  done
+
+  log "${GREEN}✅ Firewall processado com sucesso.${NC}"
 }
+
 
 clamav_scan() {
   log "${YELLOW}[4/12] Verificando presença do ClamAV...${NC}"
@@ -181,25 +217,35 @@ clamav_scan() {
   fi
 }
 
+
 pacotes_orfaos() {
   log "${YELLOW}[5/12] Verificando pacotes órfãos...${NC}"
-  if command -v deborphan >/dev/null; then
-    deborphan | tee -a "$log_file"
+  if ! command -v deborphan >/dev/null; then
+    sudo apt install deborphan -y
+  fi
+  ORFAOS=$(deborphan)
+  if [[ -n "$ORFAOS" ]]; then
+    log "Pacotes órfãos encontrados:\n$ORFAOS"
+    read -rp "Deseja removê-los? (s/n) " rm_orfaos
+    if [[ "$rm_orfaos" =~ ^[Ss]$ ]]; then
+      sudo apt remove --purge -y $ORFAOS
+      log "Pacotes órfãos removidos."
+    fi
   else
-    sudo apt install deborphan -y | tee -a "$log_file"
-    deborphan | tee -a "$log_file"
+    log "Nenhum pacote órfão."
   fi
 }
 
 backup_check() {
-  log "${YELLOW}[6/12] Verificando presença de diretórios de backup comuns...${NC}"
-  for dir in /mnt/backup /backup ~/backup; do
-    if [ -d "$dir" ]; then
-      log "Backup detectado em: $dir"
-    else
-      log "${RED}Backup NÃO encontrado em: $dir${NC}"
-    fi
-  done
+  log "${YELLOW}[6/12] Backup...${NC}"
+  echo "Escolha tipo de backup: 1) Leve 2) Completo 3) Sem backup"
+  read -rp "Opção: " opt
+  case $opt in
+    1) log "Backup leve: apenas configs /home/$(whoami) e /etc/"; mkdir -p ~/backup_leve; cp -r ~/.* ~/backup_leve 2>/dev/null; cp -r /etc ~/backup_leve 2>/dev/null ;;
+    2) log "Backup completo em ~/backup_completo"; mkdir -p ~/backup_completo; cp -r /home ~/backup_completo; cp -r /etc ~/backup_completo ;;
+    3) log "Backup ignorado." ;;
+    *) log "Opção inválida. Backup ignorado." ;;
+  esac
 }
 
 usuarios_sudo() {
@@ -208,9 +254,17 @@ usuarios_sudo() {
 }
 
 servicos_ativos() {
-  log "${YELLOW}[8/12] Listando serviços ativos...${NC}"
+  log "${YELLOW}[8/12] Serviços ativos...${NC}"
+  black_list=(avahi-daemon exim4 cups cups-browsed ModemManager)
+  for svc in "${black_list[@]}"; do
+    if systemctl is-active --quiet $svc; then
+      read -rp "Serviço $svc ativo. Deseja desativar? (s/n) " ans
+      [[ "$ans" =~ ^[Ss]$ ]] && sudo systemctl disable --now $svc && log "$svc desativado."
+    fi
+  done
   systemctl list-units --type=service --state=running | tee -a "$log_file"
 }
+
 
 espaco_disco() {
   log "${YELLOW}[9/12] Verificando espaço em disco...${NC}"

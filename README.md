@@ -1,9 +1,9 @@
 # SysCheckUp v1.4.1
 
 **Ferramenta:** SysCheck-Up
-**Versão:** 1.4
+**Versão:** 1.4.1
 **Descrição:** Painel interativo de verificação, limpeza e segurança para sistemas Debian-based.
-**Autores:** Shadows & Aeris Satana
+**Autor:** Luciano S Valadão
 
 ---
 
@@ -26,10 +26,14 @@ SysCheckUp/
 ├─ SysCheckUp_automatic.sh    # Script com agendamento automático
 ├─ syscheckup.service         # Unidade systemd para execução automática
 ├─ syscheckup.timer           # Timer systemd para agendamento
-├─ Logs/                      # Diretório para logs gerados pelo script
 ├─ README.md                  # Este arquivo de documentação
-└─ modules/                   # Futuramente, funções/módulos separados
+├─ VERSIONS.md                # Histórico da versões
+├─ Logs/                      # Diretório para logs gerados pelo script
+└─ modules/                   # Funções/módulos separados
+   └─ sc.py                   # Script SysCheckUp.sh adaptado para python
+
 Funcionalidades Principais
+
 Atualização do sistema (apt update && apt upgrade)
 
 Limpeza de pacotes e cache (autoremove, autoclean, thumbnails, lixeira)
@@ -55,22 +59,20 @@ Checagem de integridade de pacotes (debsums)
 📌 O script também gera logs detalhados de todas as operações na pasta Logs/, com timestamp automático.
 
 Execução Manual
-Clone o repositório:
 
-bash
+Clone o repositório:
 Copiar código
 git clone https://github.com/lukk-valadao/SysCheckUp.git
 cd SysCheckUp
-Torne o script executável:
 
-bash
+Torne o script executável:
 Copiar código
 chmod +x SysCheckUp.sh
-Execute o script (modo interativo):
 
-bash
+Execute o script (modo interativo):
 Copiar código
 ./SysCheckUp.sh
+
 Execução Automática (SysCheckUp_automatic.sh)
 O script SysCheckUp_automatic.sh foi projetado para rodar sem interação, ideal para agendamento recorrente.
 Ele é integrado ao systemd timer, permitindo que o sistema rode o check-up de forma periódica (ex.: semanal).
@@ -78,25 +80,21 @@ Ele é integrado ao systemd timer, permitindo que o sistema rode o check-up de f
 Instalação do serviço e timer
 Copie os arquivos de serviço e timer para o systemd:
 
-bash
 Copiar código
 sudo cp syscheckup.service /etc/systemd/system/
 sudo cp syscheckup.timer /etc/systemd/system/
 Recarregue o systemd e ative o timer:
 
-bash
 Copiar código
 sudo systemctl daemon-reload
 sudo systemctl enable --now syscheckup.timer
 Verificação do status
 Checar se o timer está ativo:
 
-bash
 Copiar código
 systemctl list-timers | grep syscheckup
 Forçar uma execução manual:
 
-bash
 Copiar código
 sudo systemctl start syscheckup.service
 📌 Todos os resultados ficam salvos em SysCheckUp/Logs/ com data e hora.
@@ -110,7 +108,7 @@ A primeira execução pode instalar pacotes necessários como clamav, deborphan,
 
 .gitignore recomendado
 gitignore
-Copiar código
+
 Logs/*
 *.log
 *.tmp
@@ -120,4 +118,4 @@ Isso evita versionar logs ou arquivos temporários do script.
 Licença
 Projeto privado, sem licença pública no momento.
 
-Desenvolvedores: Lukk Shadows & Aeris Satana
+Desenvolvedor: Luciano Valadão

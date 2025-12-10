@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Ferramenta: SysCheck-Up v1.3-auto
+# Ferramenta: SysCheck-Up v1.0-auto
 # Descrição: Versão automática do SysCheck-Up para execução via cron ou systemd
-# Autor: Shadows e Aeris Satana
+# Autor: Luciano Valadão
 
 # === CORES PARA TERMINAL ===
 RED='\033[0;31m'
