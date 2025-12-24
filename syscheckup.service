@@ -1,0 +1,8 @@
+[Unit]
+Description=SysCheckUp Automático
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/local_da_instalação/syscheckup_auto.sh
+User=seu_usuario

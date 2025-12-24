@@ -1,0 +1,9 @@
+[Unit]
+Description=Executa SysCheckUp automaticamente uma vez por semana
+#
+[Timer]
+OnCalendar=weekly
+Persistent=true
+#
+[Install]
+WantedBy=timers.target

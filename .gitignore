@@ -1,0 +1,10 @@
+# Logs
+Logs/
+*.log
+
+# Arquivos temporários
+*.swp
+*.tmp
+*.bak
+__pycache__/
+*.pyc
