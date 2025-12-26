@@ -10,6 +10,22 @@
 
 ---
 
+⚠️ Status do Projeto
+
+🚫 Este repositório foi arquivado.
+
+O SysCheckUp foi incorporado e evoluído dentro do projeto principal:
+
+👉 ShadowSec Toolkit
+https://github.com/lukk-valadao/ShadowSec-Toolkit
+
+👉 (núcleo estável em desenvolvimento):
+https://github.com/lukk-valadao/ShadowSec-Toolkit-Core
+
+Este repositório permanece público apenas para fins históricos, estudo e referência técnica.
+
+---
+
 ## 📄 Descrição do Projeto
 
 O **SysCheckUp** é um script robusto escrito em **Bash** que fornece uma interface interativa completa para administradores e usuários de sistemas **Debian e derivados (Ubuntu, Mint)**. Ele automatiza verificações essenciais de sistema, limpeza de disco, análise de segurança e auditoria básica.
